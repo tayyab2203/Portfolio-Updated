@@ -25,10 +25,7 @@ function normalizeSkillsObject(skillsObj) {
   }));
 }
 
-export async function getSkillsForPublic() {
-  const collection = await getCollection();
-
-  // Seed from static data if collection is empty
+async function ensureSeeded(collection) {
   const count = await collection.countDocuments();
   if (count === 0 && defaultSkills) {
     const normalized = normalizeSkillsObject(defaultSkills);
@@ -37,6 +34,12 @@ export async function getSkillsForPublic() {
       categories: normalized,
     });
   }
+}
+
+export async function getSkillsForPublic() {
+  const collection = await getCollection();
+
+  await ensureSeeded(collection);
 
   const doc =
     (await collection.findOne({ slug: 'default' })) ||
@@ -47,5 +50,38 @@ export async function getSkillsForPublic() {
   }
 
   return doc.categories || normalizeSkillsObject(defaultSkills);
+}
+
+export async function getSkillsForAdmin() {
+  const collection = await getCollection();
+  await ensureSeeded(collection);
+
+  const doc =
+    (await collection.findOne({ slug: 'default' })) ||
+    (await collection.findOne({}));
+
+  if (!doc) {
+    return { categories: normalizeSkillsObject(defaultSkills) };
+  }
+
+  return {
+    categories: doc.categories || normalizeSkillsObject(defaultSkills),
+  };
+}
+
+export async function updateSkills(categories) {
+  const collection = await getCollection();
+  await collection.updateOne(
+    { slug: 'default' },
+    {
+      $set: {
+        slug: 'default',
+        categories,
+      },
+    },
+    { upsert: true }
+  );
+
+  return { categories };
 }
 

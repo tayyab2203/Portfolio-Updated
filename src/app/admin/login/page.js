@@ -1,11 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, User, LogIn, AlertCircle, Shield } from 'lucide-react';
 
 export default function AdminLogin() {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -29,7 +27,6 @@ export default function AdminLogin() {
         body: JSON.stringify(formData),
       });
 
-      // 302 = login success; cookie is set by browser. Go to /admin explicitly (do NOT use response.url).
       if (response.status === 302 || response.type === 'opaqueredirect') {
         window.location.href = '/admin';
         return;
@@ -56,232 +53,142 @@ export default function AdminLogin() {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // Clear error when user starts typing
     if (error) setError('');
   };
 
+  const showDefaultCreds = process.env.NODE_ENV !== 'production';
+
   return (
-    <div
-      className="min-h-[calc(100vh-5rem)] w-full bg-gradient-to-br from-black via-charcoal-brown/30 to-black relative overflow-hidden flex items-center justify-center"
-      suppressHydrationWarning
-    >
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none" suppressHydrationWarning>
-        <motion.div
-          animate={{
-            x: [0, 100, 0],
-            y: [0, 100, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-          className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-toffee-brown/10 to-transparent rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            x: [0, -100, 0],
-            y: [0, -100, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-          className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-br from-camel/10 to-transparent rounded-full blur-3xl"
-        />
-      </div>
+    <div className="min-h-[calc(100vh-5rem)] w-full bg-black flex items-center justify-center px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-ebony/90 border border-dusty-olive/30 rounded-2xl shadow-2xl p-8">
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-camel/20 flex items-center justify-center mb-4">
+              <Shield className="text-camel" size={28} />
+            </div>
+            <h1 className="text-3xl font-bold text-khaki-beige-900 font-comfortaa mb-1">
+              Admin Portal
+            </h1>
+            <p className="text-sm text-dry-sage-600">
+              Secure access to your portfolio management
+            </p>
+          </div>
 
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" suppressHydrationWarning />
-
-      <div className="relative z-10 w-full flex items-center justify-center p-4" suppressHydrationWarning>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md mx-auto"
-          suppressHydrationWarning
-        >
-          {/* Main Login Card */}
-          <div className="bg-gradient-to-br from-ebony/95 via-ebony/90 to-charcoal-brown/95 backdrop-blur-xl p-8 sm:p-10 rounded-3xl border border-dusty-olive/20 shadow-2xl relative overflow-hidden">
-            {/* Shine Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-shine" />
-            
-            {/* Header */}
-            <div className="text-center mb-8">
+          <AnimatePresence>
+            {error && (
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring' }}
-                className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-toffee-brown via-saddle-brown to-toffee-brown rounded-2xl mb-6 shadow-lg"
-              >
-                <Shield className="text-khaki-beige-900" size={36} />
-              </motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-4xl font-bold text-khaki-beige-900 font-comfortaa mb-3"
+                exit={{ opacity: 0, y: -8 }}
+                className="mb-5 flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300"
               >
-                Admin Portal
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="text-dry-sage-500 text-sm"
+                <AlertCircle size={18} className="shrink-0" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-khaki-beige-900 mb-1.5"
               >
-                Secure access to your portfolio management
-              </motion.p>
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center text-dry-sage-600">
+                  <User size={18} />
+                </span>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-lg border border-dusty-olive/40 bg-charcoal-brown/70 px-10 py-2.5 text-sm text-khaki-beige-900 placeholder-dry-sage-600 focus:border-camel focus:outline-none focus:ring-2 focus:ring-camel/40"
+                  placeholder="Enter your username"
+                />
+              </div>
             </div>
 
-            {/* Error Message */}
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto' }}
-                  exit={{ opacity: 0, y: -10, height: 0 }}
-                  className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center gap-3 backdrop-blur-sm"
-                >
-                  <AlertCircle size={20} className="flex-shrink-0" />
-                  <span>{error}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Username Field */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-khaki-beige-900 mb-1.5"
               >
-                <label htmlFor="username" className="block text-khaki-beige-900 mb-2 font-semibold text-sm">
-                  Username
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-toffee-brown/20 to-camel/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
-                  <div className="relative flex items-center">
-                    <div className="absolute left-4 z-10">
-                      <User className="text-dry-sage-500 group-focus-within:text-camel transition-colors" size={20} />
-                    </div>
-                    <input
-                      type="text"
-                      id="username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      required
-                      className="w-full pl-12 pr-4 py-3.5 bg-charcoal-brown/60 border border-dusty-olive/40 rounded-xl text-khaki-beige-900 placeholder-dry-sage-500 focus:outline-none focus:ring-2 focus:ring-camel/50 focus:border-camel transition-all duration-200 backdrop-blur-sm"
-                      placeholder="Enter your username"
-                    />
-                  </div>
-                </div>
-              </motion.div>
+                Password
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center text-dry-sage-600">
+                  <Lock size={18} />
+                </span>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-lg border border-dusty-olive/40 bg-charcoal-brown/70 px-10 py-2.5 text-sm text-khaki-beige-900 placeholder-dry-sage-600 focus:border-camel focus:outline-none focus:ring-2 focus:ring-camel/40"
+                  placeholder="Enter your password"
+                />
+              </div>
+            </div>
 
-              {/* Password Field */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-              >
-                <label htmlFor="password" className="block text-khaki-beige-900 mb-2 font-semibold text-sm">
-                  Password
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-toffee-brown/20 to-camel/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
-                  <div className="relative flex items-center">
-                    <div className="absolute left-4 z-10">
-                      <Lock className="text-dry-sage-500 group-focus-within:text-camel transition-colors" size={20} />
-                    </div>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      className="w-full pl-12 pr-4 py-3.5 bg-charcoal-brown/60 border border-dusty-olive/40 rounded-xl text-khaki-beige-900 placeholder-dry-sage-500 focus:outline-none focus:ring-2 focus:ring-camel/50 focus:border-camel transition-all duration-200 backdrop-blur-sm"
-                      placeholder="Enter your password"
-                    />
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Login Button */}
-              <motion.button
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-toffee-brown via-saddle-brown to-toffee-brown hover:from-saddle-brown hover:via-toffee-brown hover:to-saddle-brown text-khaki-beige-900 py-4 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-2xl hover:scale-[1.02] disabled:hover:scale-100 relative overflow-hidden group"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                {isLoading ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      className="w-5 h-5 border-2 border-khaki-beige-900 border-t-transparent rounded-full"
-                    />
-                    <span>Authenticating...</span>
-                  </>
-                ) : (
-                  <>
-                    <LogIn size={20} />
-                    <span>Sign In</span>
-                  </>
-                )}
-              </motion.button>
-            </form>
-
-            {/* Footer Info */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="mt-8 pt-6 border-t border-dusty-olive/20"
+            <motion.button
+              type="submit"
+              disabled={isLoading}
+              whileTap={{ scale: isLoading ? 1 : 0.97 }}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-camel px-4 py-2.5 text-sm font-semibold text-ebony shadow-md transition hover:bg-toffee-brown disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <p className="text-xs text-dry-sage-500 text-center leading-relaxed">
+              {isLoading ? (
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="h-4 w-4 rounded-full border-2 border-ebony border-t-transparent"
+                  />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn size={16} />
+                  <span>Sign In</span>
+                </>
+              )}
+            </motion.button>
+          </form>
+
+          {showDefaultCreds && (
+            <div className="mt-6 border-t border-dusty-olive/20 pt-4">
+              <p className="text-[11px] text-dry-sage-600 text-center leading-relaxed">
                 <span className="text-dry-sage-400">Default credentials:</span>{' '}
                 <span className="font-mono text-camel">admin</span> /{' '}
                 <span className="font-mono text-camel">admin123</span>
                 <br />
-                <span className="text-red-400/80 mt-1 block">⚠️ Change these in production!</span>
+                <span className="mt-1 block text-[11px] text-red-400/80">
+                  Change these and set <code className="font-mono">ADMIN_USERNAME</code>,{' '}
+                  <code className="font-mono">ADMIN_PASSWORD_HASH</code> in production.
+                </span>
               </p>
-            </motion.div>
-          </div>
-
-          {/* Security Badge */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="mt-6 text-center"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-ebony/40 backdrop-blur-sm border border-dusty-olive/20 rounded-full">
-              <Shield size={14} className="text-camel" />
-              <span className="text-xs text-dry-sage-500">Secure Connection</span>
             </div>
-          </motion.div>
-        </motion.div>
-      </div>
+          )}
 
-      <style jsx>{`
-        @keyframes shine {
-          to {
-            transform: translateX(100%);
-          }
-        }
-        .animate-shine {
-          animation: shine 3s infinite;
-        }
-      `}</style>
+          <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-dry-sage-600">
+            <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
+            <span>Secure connection</span>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

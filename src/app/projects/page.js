@@ -1,15 +1,44 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { projects } from '@/data/projects';
 import ProjectCard from '@/components/ProjectCard';
 
 export default function Projects() {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProjects() {
+      try {
+        const res = await fetch('/api/public/projects');
+        if (!res.ok) return;
+        const data = await res.json();
+        setProjects(data.projects || []);
+      } catch (error) {
+        console.error('Failed to load projects from API:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProjects();
+  }, []);
+
   const featuredProjects = projects.filter((p) => p.featured);
   const otherProjects = projects.filter((p) => !p.featured);
 
   return (
     <div className="min-h-screen bg-black text-almond_cream">
       <div className="max-w-7xl mx-auto px-4 py-20">
+        {loading && (
+          <div className="flex items-center justify-center min-h-[200px] mb-10">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              className="w-8 h-8 border-2 border-camel border-t-transparent rounded-full"
+            />
+          </div>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

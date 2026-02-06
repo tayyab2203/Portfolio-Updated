@@ -3,9 +3,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FolderKanban, Code, Building2, TrendingUp, Eye, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { projects } from '@/data/projects';
-import { skills } from '@/data/skills';
-import { companyInfo } from '@/data/company';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -14,15 +11,49 @@ export default function AdminDashboard() {
     skills: 0,
     categories: 0,
   });
+  const [recentProjects, setRecentProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const totalSkills = Object.values(skills).reduce((acc, cat) => acc + cat.skills.length, 0);
-    setStats({
-      projects: projects.length,
-      featuredProjects: projects.filter(p => p.featured).length,
-      skills: totalSkills,
-      categories: Object.keys(skills).length,
-    });
+    async function loadDashboardData() {
+      try {
+        const [projectsRes, skillsRes] = await Promise.all([
+          fetch('/api/admin/projects'),
+          fetch('/api/admin/skills'),
+        ]);
+
+        if (projectsRes.ok) {
+          const { projects } = await projectsRes.json();
+          const allProjects = projects || [];
+          setRecentProjects(allProjects.slice(0, 3));
+          setStats((prev) => ({
+            ...prev,
+            projects: allProjects.length,
+            featuredProjects: allProjects.filter((p) => p.featured).length,
+          }));
+        }
+
+        if (skillsRes.ok) {
+          const { categories } = await skillsRes.json();
+          const allCategories = categories || [];
+          const totalSkills = allCategories.reduce(
+            (acc, cat) => acc + (cat.skills?.length || 0),
+            0
+          );
+          setStats((prev) => ({
+            ...prev,
+            skills: totalSkills,
+            categories: allCategories.length,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadDashboardData();
   }, []);
 
   const quickActions = [
@@ -145,7 +176,7 @@ export default function AdminDashboard() {
                   className="block bg-ebony/60 backdrop-blur-sm p-6 rounded-xl border border-dusty-olive/30 hover:border-camel/50 transition-all duration-300 hover:scale-105 group"
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`bg-gradient-to-br ${action.color} p-3 rounded-lg group-hover:scale-110 transition-transform`}>
+                    <div className={`bg-linear-to-br ${action.color} p-3 rounded-lg group-hover:scale-110 transition-transform`}>
                       <Icon className="text-khaki-beige-900" size={24} />
                     </div>
                     <div className="flex-1">
@@ -173,33 +204,54 @@ export default function AdminDashboard() {
             View All →
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {projects.slice(0, 3).map((project, index) => (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
             <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 + index * 0.1 }}
-              className="bg-ebony/60 backdrop-blur-sm p-6 rounded-xl border border-dusty-olive/30"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              className="w-8 h-8 border-2 border-camel border-t-transparent rounded-full"
+            />
+          </div>
+        ) : recentProjects.length === 0 ? (
+          <div className="bg-ebony/60 backdrop-blur-sm p-8 rounded-xl border border-dusty-olive/30 text-center">
+            <p className="text-dry-sage-600 mb-4">No projects yet.</p>
+            <Link
+              href="/admin/projects/new"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-camel text-ebony font-semibold hover:bg-toffee-brown transition"
             >
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-semibold text-khaki-beige-900">{project.title}</h3>
-                {project.featured && (
-                  <span className="px-2 py-1 bg-toffee-brown/20 text-toffee-brown text-xs rounded-full">
-                    Featured
-                  </span>
-                )}
-              </div>
-              <p className="text-dry-sage-600 text-sm mb-4 line-clamp-2">{project.solution}</p>
-              <Link
-                href={`/admin/projects/${project.id}`}
-                className="text-camel hover:text-toffee-brown transition text-sm font-medium"
+              <Plus size={18} />
+              <span>Create Your First Project</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {recentProjects.map((project, index) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 + index * 0.1 }}
+                className="bg-ebony/60 backdrop-blur-sm p-6 rounded-xl border border-dusty-olive/30"
               >
-                Edit Project →
-              </Link>
-            </motion.div>
-          ))}
-        </div>
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-khaki-beige-900">{project.title}</h3>
+                  {project.featured && (
+                    <span className="px-2 py-1 bg-toffee-brown/20 text-toffee-brown text-xs rounded-full">
+                      Featured
+                    </span>
+                  )}
+                </div>
+                <p className="text-dry-sage-600 text-sm mb-4 line-clamp-2">{project.solution || project.problem || 'No description'}</p>
+                <Link
+                  href={`/admin/projects/${project.id}`}
+                  className="text-camel hover:text-toffee-brown transition text-sm font-medium"
+                >
+                  Edit Project →
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

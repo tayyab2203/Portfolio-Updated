@@ -1,9 +1,19 @@
 import * as jose from 'jose';
 import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '$2a$10$rOzJqZqZqZqZqZqZqZqZqOqZqZqZqZqZqZqZqZqZqZqZqZqZqZqZq'; // Default: 'admin123'
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// JWT secret
+const RAW_JWT_SECRET = process.env.JWT_SECRET || (!IS_PROD ? 'dev-jwt-secret-change-me' : '');
+if (IS_PROD && !RAW_JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable must be set in production');
+}
+const JWT_SECRET = RAW_JWT_SECRET;
+
+// Admin credentials
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || (!IS_PROD ? 'admin' : '');
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
+const DEV_FALLBACK_PASSWORD = 'admin123';
 
 // Generate password hash (use this to create initial password)
 export async function hashPassword(password) {
@@ -52,14 +62,13 @@ export async function login(username, password) {
   const normalizedAdminUsername = ADMIN_USERNAME.trim();
   
   if (normalizedUsername.toLowerCase() !== normalizedAdminUsername.toLowerCase()) {
-    console.log('Username mismatch:', { provided: normalizedUsername, expected: normalizedAdminUsername });
     return { success: false, error: 'Invalid credentials' };
   }
 
-  // If ADMIN_PASSWORD_HASH is set and is a valid bcrypt hash, verify against it
-  // Otherwise, use default password 'admin123'
+  // If ADMIN_PASSWORD_HASH is set and is a valid bcrypt hash, verify against it.
+  // In development only, fall back to plain-text DEV_FALLBACK_PASSWORD to make setup easy.
   let isValidPassword = false;
-  
+
   if (ADMIN_PASSWORD_HASH && (ADMIN_PASSWORD_HASH.startsWith('$2a$') || ADMIN_PASSWORD_HASH.startsWith('$2y$') || ADMIN_PASSWORD_HASH.startsWith('$2b$'))) {
     try {
       // Convert $2y$ to $2a$ format if needed (bcryptjs uses $2a$)
@@ -69,12 +78,14 @@ export async function login(username, password) {
       isValidPassword = await verifyPassword(password, hashToVerify);
     } catch (error) {
       console.error('Password verification error:', error);
-      // Fallback to plain text comparison if hash verification fails
-      isValidPassword = password === 'admin123';
+      if (!IS_PROD) {
+        // Fallback to plain text comparison in development only
+        isValidPassword = password === DEV_FALLBACK_PASSWORD;
+      }
     }
-  } else {
+  } else if (!IS_PROD) {
     // Fallback for development - plain text comparison
-    isValidPassword = password === 'admin123';
+    isValidPassword = password === DEV_FALLBACK_PASSWORD;
   }
 
   if (!isValidPassword) {

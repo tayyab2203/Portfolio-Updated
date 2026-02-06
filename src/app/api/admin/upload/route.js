@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { verifyToken } from '@/lib/auth';
+import { put } from '@vercel/blob';
+
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request) {
   try {
@@ -11,41 +12,51 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error('BLOB_READ_WRITE_TOKEN is not set');
+      return NextResponse.json(
+        { error: 'File storage is not configured on the server' },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get('file');
 
-    if (!file) {
+    if (!file || typeof file === 'string') {
       return NextResponse.json(
         { error: 'No file uploaded' },
         { status: 400 }
       );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Basic validation
+    const fileSize = file.size ?? 0;
+    const fileType = file.type || '';
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    try {
-      await mkdir(uploadsDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist
+    if (!fileType.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'Only image uploads are allowed' },
+        { status: 400 }
+      );
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filename = `${timestamp}-${originalName}`;
-    const filepath = join(uploadsDir, filename);
+    if (fileSize > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { error: 'File is too large. Maximum size is 5MB.' },
+        { status: 400 }
+      );
+    }
 
-    // Write file
-    await writeFile(filepath, buffer);
+    const safeName = file.name?.replace?.(/[^a-zA-Z0-9_.-]/g, '_') || 'upload';
 
-    // Return public URL
-    const publicUrl = `/uploads/${filename}`;
+    const blob = await put(safeName, file, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
 
     return NextResponse.json(
-      { message: 'File uploaded successfully', url: publicUrl },
+      { message: 'File uploaded successfully', url: blob.url },
       { status: 200 }
     );
   } catch (error) {

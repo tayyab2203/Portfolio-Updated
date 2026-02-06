@@ -18,10 +18,7 @@ async function getCollection() {
   return db.collection(COLLECTION);
 }
 
-export async function getCompanyData() {
-  const collection = await getCollection();
-
-  // Seed if empty
+async function ensureSeeded(collection) {
   const count = await collection.countDocuments();
   if (count === 0) {
     await collection.insertOne({
@@ -35,6 +32,12 @@ export async function getCompanyData() {
       milestones: defaultMilestones,
     });
   }
+}
+
+export async function getCompanyData() {
+  const collection = await getCollection();
+
+  await ensureSeeded(collection);
 
   const doc =
     (await collection.findOne({ slug: 'default' })) ||
@@ -61,5 +64,32 @@ export async function getCompanyData() {
     values: doc.values ?? defaultValues,
     milestones: doc.milestones ?? defaultMilestones,
   };
+}
+
+export async function updateCompanyData(data) {
+  const collection = await getCollection();
+
+  const updateDoc = {
+    ...(data.companyInfo && { companyInfo: data.companyInfo }),
+    ...(data.team && { team: data.team }),
+    ...(data.achievements && { achievements: data.achievements }),
+    ...(data.vision && { vision: data.vision }),
+    ...(data.mission && { mission: data.mission }),
+    ...(data.values && { values: data.values }),
+    ...(data.milestones && { milestones: data.milestones }),
+  };
+
+  await collection.updateOne(
+    { slug: 'default' },
+    {
+      $set: {
+        slug: 'default',
+        ...updateDoc,
+      },
+    },
+    { upsert: true }
+  );
+
+  return getCompanyData();
 }
 
