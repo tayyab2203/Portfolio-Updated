@@ -1,7 +1,6 @@
 import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import LayoutClient from '@/components/LayoutClient';
 
 export const metadata = {
   title: 'Professional Portfolio | Full-Stack Developer & AI Enthusiast',
@@ -32,11 +31,12 @@ export const metadata = {
       'max-snippet': -1,
     },
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }) {
@@ -51,9 +51,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="bg-black text-khaki-beige-900 antialiased" suppressHydrationWarning>
         <ErrorBoundary>
-          <Navbar />
-          <main className="min-h-screen pt-20">{children}</main>
-          <Footer />
+          <LayoutClient>{children}</LayoutClient>
         </ErrorBoundary>
       </body>
     </html>

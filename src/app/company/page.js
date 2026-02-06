@@ -1,15 +1,7 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Parallax } from 'react-parallax';
-import {
-  companyInfo,
-  team,
-  achievements,
-  vision,
-  mission,
-  values,
-  milestones,
-} from '@/data/company';
 import { useInView } from '@/hooks/useInView';
 import {
   Rocket,
@@ -35,13 +27,39 @@ const iconMap = {
 
 export default function Company() {
   const { ref: achievementsRef, inView: achievementsInView } = useInView({ threshold: 0.2 });
+  const [companyData, setCompanyData] = useState(null);
+
+  useEffect(() => {
+    async function loadCompany() {
+      try {
+        const res = await fetch('/api/public/company');
+        if (!res.ok) return;
+        const data = await res.json();
+        setCompanyData(data);
+      } catch (error) {
+        console.error('Failed to load company data from API:', error);
+      }
+    }
+
+    loadCompany();
+  }, []);
+
+  if (!companyData) {
+    return (
+      <div className="min-h-screen bg-black text-almond_cream flex items-center justify-center">
+        <p className="text-dry-sage-600">Loading company information...</p>
+      </div>
+    );
+  }
+
+  const { companyInfo, team, achievements, vision, mission, values, milestones } = companyData;
 
   return (
     <div className="min-h-screen bg-black text-almond_cream">
       {/* Hero Section */}
       <section className="relative">
         <Parallax strength={300}>
-          <div className="h-[400px] md:h-[500px] bg-gradient-to-br from-jet_black to-jet_black-300 flex items-center justify-center">
+          <div className="h-[400px] md:h-[500px] bg-linear-to-br from-jet_black to-jet_black-300 flex items-center justify-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -218,7 +236,7 @@ export default function Company() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="bg-gradient-to-br from-jet_black to-jet_black-300 p-8 rounded-lg border border-stone_brown/30"
+            className="bg-linear-to-br from-jet_black to-jet_black-300 p-8 rounded-lg border border-stone_brown/30"
           >
             <h2 className="text-2xl font-bold mb-4 text-khaki-beige font-comfortaa">
               {vision.title}
@@ -231,7 +249,7 @@ export default function Company() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="bg-gradient-to-br from-jet_black to-jet_black-300 p-8 rounded-lg border border-stone_brown/30"
+            className="bg-linear-to-br from-jet_black to-jet_black-300 p-8 rounded-lg border border-stone_brown/30"
           >
             <h2 className="text-2xl font-bold mb-4 text-khaki-beige font-comfortaa">
               {mission.title}

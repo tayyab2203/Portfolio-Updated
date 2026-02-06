@@ -1,14 +1,46 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { skills, certifications } from '@/data/skills';
 import SkillBar from '@/components/SkillBar';
 import { useInView } from '@/hooks/useInView';
-import { Award, CheckCircle } from 'lucide-react';
+import { Award, CheckCircle, Code, Database, Smartphone, Cloud, Settings, Palette, GitBranch, Server } from 'lucide-react';
+
+const iconMap = {
+  Code,
+  Database,
+  Smartphone,
+  Cloud,
+  Settings,
+  Palette,
+  GitBranch,
+  Server,
+};
 
 export default function Skills() {
   const { ref: certRef, inView: certInView } = useInView({ threshold: 0.3 });
+  const [skillCategories, setSkillCategories] = useState([]);
 
-  const skillCategories = Object.values(skills);
+  useEffect(() => {
+    async function loadSkills() {
+      try {
+        const res = await fetch('/api/public/skills');
+        if (!res.ok) return;
+        const data = await res.json();
+        const categoriesWithIcons = (data.categories || []).map((category) => ({
+          ...category,
+          skills: (category.skills || []).map((skill) => ({
+            ...skill,
+            icon: iconMap[skill.iconKey] || Code,
+          })),
+        }));
+        setSkillCategories(categoriesWithIcons);
+      } catch (error) {
+        console.error('Failed to load skills from API:', error);
+      }
+    }
+
+    loadSkills();
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-khaki-beige-900">
@@ -138,7 +170,7 @@ export default function Skills() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="mt-20 bg-gradient-to-r from-ebony/80 to-charcoal-brown/80 p-8 md:p-12 rounded-lg border border-dusty-olive/40 hover:border-camel/50 transition-all duration-300"
+          className="mt-20 bg-linear-to-r from-ebony/80 to-charcoal-brown/80 p-8 md:p-12 rounded-lg border border-dusty-olive/40 hover:border-camel/50 transition-all duration-300"
         >
           <h2 className="text-3xl font-bold mb-6 text-camel font-comfortaa">
             Experience Summary
