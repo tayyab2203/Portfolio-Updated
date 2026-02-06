@@ -160,12 +160,14 @@ export default function EditProjectPage() {
       if (response.ok) {
         router.push('/admin/projects');
       } else {
-        const data = await response.json();
-        alert(data.error || 'Failed to update project');
+        const data = await response.json().catch(() => ({ error: 'Unknown error' }));
+        const errorMsg = data.error || data.details || 'Failed to update project';
+        alert(`Error: ${errorMsg}`);
+        console.error('Update failed:', data);
       }
     } catch (error) {
       console.error('Error updating project:', error);
-      alert('Error updating project');
+      alert(`Error updating project: ${error.message || 'Network error'}`);
     } finally {
       setSaving(false);
     }

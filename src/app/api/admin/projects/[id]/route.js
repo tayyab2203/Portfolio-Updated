@@ -28,8 +28,17 @@ export async function GET(request, { params }) {
     return NextResponse.json({ project }, { status: 200 });
   } catch (error) {
     console.error('Error fetching project:', error);
+    
+    let errorMessage = 'Failed to fetch project';
+    if (error.message?.includes('MongoServerSelectionError') || error.message?.includes('SSL')) {
+      errorMessage = 'Database connection error. Please check MongoDB configuration.';
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to fetch project' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -45,7 +54,25 @@ export async function PUT(request, { params }) {
     }
 
     const { id } = await params;
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
+    // Validate required fields
+    if (!body.title || !body.problem || !body.solution) {
+      return NextResponse.json(
+        { error: 'Missing required fields: title, problem, solution' },
+        { status: 400 }
+      );
+    }
+
     const updated = await updateProjectInDb(id, body);
 
     if (!updated) {
@@ -61,8 +88,20 @@ export async function PUT(request, { params }) {
     );
   } catch (error) {
     console.error('Error updating project:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to update project';
+    if (error.message?.includes('MongoServerSelectionError') || error.message?.includes('SSL')) {
+      errorMessage = 'Database connection error. Please check MongoDB configuration.';
+    } else if (error.message) {
+      errorMessage = `Update failed: ${error.message}`;
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to update project' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
