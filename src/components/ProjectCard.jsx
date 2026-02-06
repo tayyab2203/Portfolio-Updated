@@ -11,6 +11,7 @@ import 'swiper/css/pagination';
 
 export default function ProjectCard({ project, index }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
 
   return (
     <motion.div
@@ -31,14 +32,27 @@ export default function ProjectCard({ project, index }) {
           >
             {project.images.map((img, idx) => (
               <SwiperSlide key={idx}>
-                <div className="w-full h-full bg-gradient-to-br from-toffee-brown/20 to-camel/10 flex items-center justify-center">
-                  <span className="text-dry-sage-600">Project Image {idx + 1}</span>
+                <div className="w-full h-full relative">
+                  {imageErrors[idx] ? (
+                    <div className="w-full h-full bg-linear-to-br from-toffee-brown/20 to-camel/10 flex items-center justify-center">
+                      <span className="text-dry-sage-600">Project Image {idx + 1}</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={img}
+                      alt={`${project.title} - Image ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={() => {
+                        setImageErrors((prev) => ({ ...prev, [idx]: true }));
+                      }}
+                    />
+                  )}
                 </div>
               </SwiperSlide>
             ))}
           </Swiper>
           {project.featured && (
-            <div className="absolute top-4 right-4 bg-gradient-to-r from-toffee-brown to-saddle-brown px-3 py-1 rounded-full text-xs font-semibold text-khaki-beige-900">
+            <div className="absolute top-4 right-4 bg-linear-to-r from-toffee-brown to-saddle-brown px-3 py-1 rounded-full text-xs font-semibold text-khaki-beige-900">
               Featured
             </div>
           )}
@@ -213,7 +227,7 @@ export default function ProjectCard({ project, index }) {
         {/* Expand/Collapse Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full py-2 px-4 bg-gradient-to-r from-toffee-brown/20 to-camel/20 hover:from-toffee-brown/30 hover:to-camel/30 text-khaki-beige-900 rounded-lg transition-all duration-300 font-semibold border border-camel/30 hover:border-camel/50"
+          className="w-full py-2 px-4 bg-linear-to-r from-toffee-brown/20 to-camel/20 hover:from-toffee-brown/30 hover:to-camel/30 text-khaki-beige-900 rounded-lg transition-all duration-300 font-semibold border border-camel/30 hover:border-camel/50"
         >
           {isExpanded ? 'Show Less' : 'Read Full Case Study'}
         </button>
