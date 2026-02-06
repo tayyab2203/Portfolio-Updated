@@ -22,6 +22,7 @@ export default function Home() {
   const [allProjects, setAllProjects] = useState([]);
   const [topSkills, setTopSkills] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
+  const [imageErrors, setImageErrors] = useState({});
 
   useEffect(() => {
     async function loadData() {
@@ -225,9 +226,22 @@ export default function Home() {
                   whileHover={{ y: -10, scale: 1.02 }}
                   className="bg-ebony/50 rounded-xl border border-dusty-olive/30 hover:border-camel/50 transition-all duration-300 overflow-hidden group"
                 >
-                  <div className="h-48 bg-linear-to-br from-toffee-brown/20 to-camel/20 flex items-center justify-center">
-                    <Briefcase className="text-toffee-brown" size={48} />
-                  </div>
+                  {project.images && project.images.length > 0 && !imageErrors[project.id] ? (
+                    <div className="h-48 bg-charcoal-brown/50 flex items-center justify-center overflow-hidden relative">
+                      <img
+                        src={project.images[0]}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                        onError={() => {
+                          setImageErrors((prev) => ({ ...prev, [project.id]: true }));
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-48 bg-linear-to-br from-toffee-brown/20 to-camel/20 flex items-center justify-center">
+                      <Briefcase className="text-toffee-brown" size={48} />
+                    </div>
+                  )}
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-xl font-bold text-khaki-beige-900">{project.title}</h3>

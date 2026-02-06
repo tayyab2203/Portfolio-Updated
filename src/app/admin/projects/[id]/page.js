@@ -37,10 +37,19 @@ export default function EditProjectPage() {
 
   const fetchProject = async () => {
     try {
+      console.log('Fetching project with ID:', projectId);
       const response = await fetch(`/api/admin/projects/${projectId}`);
+      
       if (response.ok) {
         const data = await response.json();
         const project = data.project || {};
+        
+        if (!project.id) {
+          console.error('Project data missing ID:', data);
+          alert('Error: Project data is invalid');
+          router.push('/admin/projects');
+          return;
+        }
         
         // Ensure images and techStack are always arrays
         setFormData({
@@ -55,12 +64,14 @@ export default function EditProjectPage() {
           },
         });
       } else {
-        alert('Failed to load project');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Failed to load project:', errorData);
+        alert(`Error: ${errorData.error || 'Failed to load project'}\n${errorData.details || ''}`);
         router.push('/admin/projects');
       }
     } catch (error) {
       console.error('Error fetching project:', error);
-      alert('Error loading project');
+      alert(`Error loading project: ${error.message || 'Network error'}`);
     } finally {
       setLoading(false);
     }

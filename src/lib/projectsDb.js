@@ -1,4 +1,5 @@
 import clientPromise from './mongodb';
+import { ObjectId } from 'mongodb';
 import { projects as defaultProjects } from '@/data/projects';
 
 const DB_NAME = process.env.MONGODB_DB || 'portfolio';
@@ -61,8 +62,40 @@ export async function createProject(data) {
 
 export async function getProjectById(id) {
   const collection = await getCollection();
-  const numericId = Number(id);
-  const project = await collection.findOne({ id: numericId });
+  
+  // Try both numeric and string ID to handle type mismatches
+  let numericId = Number(id);
+  if (isNaN(numericId)) {
+    // If conversion fails, try string match
+    const project = await collection.findOne({ id: String(id) });
+    return normalizeProject(project);
+  }
+  
+  // First try numeric ID
+  let project = await collection.findOne({ id: numericId });
+  
+  // If not found, try string ID (in case DB has string IDs)
+  if (!project) {
+    project = await collection.findOne({ id: String(id) });
+  }
+  
+  // If still not found, try finding by MongoDB _id (if it looks like an ObjectId)
+  if (!project && typeof id === 'string' && id.match(/^[0-9a-fA-F]{24}$/)) {
+    try {
+      project = await collection.findOne({ _id: new ObjectId(id) });
+    } catch (e) {
+      // Invalid ObjectId format, ignore
+      console.log('Invalid ObjectId format:', id);
+    }
+  }
+  
+  // Debug: If still not found, log all project IDs to help diagnose
+  if (!project) {
+    const allProjects = await collection.find({}).projection({ id: 1, title: 1 }).toArray();
+    console.error(`Project not found. Searched for ID: ${id} (type: ${typeof id}, numeric: ${numericId})`);
+    console.error('Available project IDs in DB:', allProjects.map(p => ({ id: p.id, idType: typeof p.id, title: p.title })));
+  }
+  
   return normalizeProject(project);
 }
 

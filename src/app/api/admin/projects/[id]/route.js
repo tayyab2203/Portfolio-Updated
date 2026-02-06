@@ -16,15 +16,24 @@ export async function GET(request, { params }) {
     }
 
     const { id } = await params;
+    
+    // Log for debugging
+    console.log('Fetching project with ID:', id, 'Type:', typeof id);
+    
     const project = await getProjectById(id);
 
     if (!project) {
+      console.error('Project not found for ID:', id);
       return NextResponse.json(
-        { error: 'Project not found' },
+        { 
+          error: 'Project not found',
+          details: `No project found with ID: ${id} (type: ${typeof id})`
+        },
         { status: 404 }
       );
     }
 
+    console.log('Project found:', project.id, project.title);
     return NextResponse.json({ project }, { status: 200 });
   } catch (error) {
     console.error('Error fetching project:', error);
