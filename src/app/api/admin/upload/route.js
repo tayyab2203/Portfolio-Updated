@@ -13,9 +13,14 @@ export async function POST(request) {
     }
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      console.error('BLOB_READ_WRITE_TOKEN is not set');
+      console.error('BLOB_READ_WRITE_TOKEN is not set in environment variables');
       return NextResponse.json(
-        { error: 'File storage is not configured on the server' },
+        { 
+          error: 'File storage is not configured. Please set BLOB_READ_WRITE_TOKEN in Vercel environment variables.',
+          details: process.env.NODE_ENV === 'production' 
+            ? 'This is a production deployment. Add BLOB_READ_WRITE_TOKEN in Vercel Dashboard → Settings → Environment Variables.'
+            : 'Add BLOB_READ_WRITE_TOKEN to your .env.local file for local development.'
+        },
         { status: 500 }
       );
     }
@@ -61,8 +66,20 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error('Error uploading file:', error);
+    
+    // Provide more specific error messages
+    if (error.message?.includes('token') || error.message?.includes('unauthorized')) {
+      return NextResponse.json(
+        { error: 'Invalid Blob token. Please check BLOB_READ_WRITE_TOKEN in Vercel environment variables.' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { 
+        error: 'Failed to upload file',
+        details: process.env.NODE_ENV === 'production' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
