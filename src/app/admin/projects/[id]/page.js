@@ -40,9 +40,14 @@ export default function EditProjectPage() {
       const response = await fetch(`/api/admin/projects/${projectId}`);
       if (response.ok) {
         const data = await response.json();
+        const project = data.project || {};
+        
+        // Ensure images and techStack are always arrays
         setFormData({
-          ...data.project,
-          metrics: data.project.metrics || {
+          ...project,
+          images: Array.isArray(project.images) ? project.images : [],
+          techStack: Array.isArray(project.techStack) ? project.techStack : [],
+          metrics: project.metrics || {
             users: '',
             revenue: '',
             growth: '',
@@ -85,36 +90,40 @@ export default function EditProjectPage() {
     if (!file) return;
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
+    const uploadFormData = new FormData();
+    uploadFormData.append('file', file);
 
     try {
       const response = await fetch('/api/admin/upload', {
         method: 'POST',
-        body: formData,
+        body: uploadFormData,
       });
 
       if (response.ok) {
         const data = await response.json();
+        // Ensure images is an array before spreading
+        const currentImages = Array.isArray(formData.images) ? formData.images : [];
         setFormData({
           ...formData,
-          images: [...formData.images, data.url],
+          images: [...currentImages, data.url],
         });
       } else {
-        alert('Failed to upload image');
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData.error || 'Failed to upload image');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Error uploading image');
+      alert('Error uploading image: ' + (error.message || 'Unknown error'));
     } finally {
       setUploading(false);
     }
   };
 
   const removeImage = (index) => {
+    const currentImages = Array.isArray(formData.images) ? formData.images : [];
     setFormData({
       ...formData,
-      images: formData.images.filter((_, i) => i !== index),
+      images: currentImages.filter((_, i) => i !== index),
     });
   };
 
@@ -342,7 +351,7 @@ export default function EditProjectPage() {
                   )}
                 </div>
               </label>
-              {formData.images.length > 0 && (
+              {Array.isArray(formData.images) && formData.images.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {formData.images.map((image, index) => (
                     <div key={index} className="relative group">
@@ -430,7 +439,7 @@ export default function EditProjectPage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-toffee-brown to-saddle-brown hover:from-saddle-brown hover:to-toffee-brown text-khaki-beige-900 px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-2 bg-linear-to-r from-toffee-brown to-saddle-brown hover:from-saddle-brown hover:to-toffee-brown text-khaki-beige-900 px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <>

@@ -10,6 +10,17 @@ async function getCollection() {
   return db.collection(COLLECTION);
 }
 
+// Normalize project data to ensure arrays are always arrays
+function normalizeProject(project) {
+  if (!project) return null;
+  return {
+    ...project,
+    images: Array.isArray(project.images) ? project.images : [],
+    techStack: Array.isArray(project.techStack) ? project.techStack : [],
+    metrics: project.metrics || {},
+  };
+}
+
 export async function getAllProjects() {
   const collection = await getCollection();
 
@@ -25,7 +36,7 @@ export async function getAllProjects() {
   }
 
   const projects = await collection.find({}).sort({ id: 1 }).toArray();
-  return projects;
+  return projects.map(normalizeProject);
 }
 
 export async function createProject(data) {
@@ -51,16 +62,20 @@ export async function createProject(data) {
 export async function getProjectById(id) {
   const collection = await getCollection();
   const numericId = Number(id);
-  return collection.findOne({ id: numericId });
+  const project = await collection.findOne({ id: numericId });
+  return normalizeProject(project);
 }
 
 export async function updateProject(id, data) {
   const collection = await getCollection();
   const numericId = Number(id);
 
+  // Ensure images and techStack are arrays in the update
   const update = {
     ...data,
     id: numericId,
+    images: Array.isArray(data.images) ? data.images : (data.images ? [data.images] : []),
+    techStack: Array.isArray(data.techStack) ? data.techStack : (data.techStack ? [data.techStack] : []),
   };
 
   const result = await collection.findOneAndUpdate(
@@ -69,7 +84,7 @@ export async function updateProject(id, data) {
     { returnDocument: 'after' }
   );
 
-  return result.value;
+  return normalizeProject(result.value);
 }
 
 export async function deleteProject(id) {
