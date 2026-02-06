@@ -149,12 +149,15 @@ export default function EditProjectPage() {
     setSaving(true);
 
     try {
+      // Remove MongoDB internal fields before sending
+      const { _id, ...updateData } = formData;
+      
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(updateData),
       });
 
       if (response.ok) {

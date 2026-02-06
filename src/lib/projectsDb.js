@@ -70,20 +70,23 @@ export async function updateProject(id, data) {
   const collection = await getCollection();
   const numericId = Number(id);
 
-  // Ensure images and techStack are arrays in the update
-  const update = {
-    ...data,
-    id: numericId,
-    images: Array.isArray(data.images) ? data.images : (data.images ? [data.images] : []),
-    techStack: Array.isArray(data.techStack) ? data.techStack : (data.techStack ? [data.techStack] : []),
-    metrics: data.metrics || {},
-  };
-
   // Check if project exists first
   const existing = await collection.findOne({ id: numericId });
   if (!existing) {
     return null;
   }
+
+  // Remove MongoDB internal fields that cannot be updated
+  const { _id, ...updateData } = data;
+
+  // Ensure images and techStack are arrays in the update
+  const update = {
+    ...updateData,
+    id: numericId, // Keep the id field for our custom id
+    images: Array.isArray(data.images) ? data.images : (data.images ? [data.images] : []),
+    techStack: Array.isArray(data.techStack) ? data.techStack : (data.techStack ? [data.techStack] : []),
+    metrics: data.metrics || {},
+  };
 
   const result = await collection.findOneAndUpdate(
     { id: numericId },
